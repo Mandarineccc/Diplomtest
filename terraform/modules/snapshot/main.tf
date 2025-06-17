@@ -3,14 +3,12 @@ resource "yandex_compute_snapshot_schedule" "vm_snapshot_schedule" {
   description = "Daily snapshot for ${var.instance_name}"
 
   schedule_policy {
-    expression = "0 3 * * *" # Каждый день в 03:00
+    expression = "0 3 * * *" # Каждый день в 03:00 UTC
   }
 
-  snapshot_count = 7 # Хранить 7 дней
+  snapshot_count = 7 # Хранить последние 7 снимков
 
   disk_ids = var.disk_ids
-
-  retention_period = "168h" # 7 дней
 
   labels = {
     project = "diploma"

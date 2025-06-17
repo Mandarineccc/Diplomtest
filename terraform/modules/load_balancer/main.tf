@@ -22,8 +22,9 @@ resource "yandex_alb_backend_group" "web_bg" {
     target_group_ids = [yandex_alb_target_group.web_tg.id]
 
     healthcheck {
-      timeout  = "1s"
       interval = "5s"
+      timeout  = "1s"
+
       http_healthcheck {
         path = "/"
       }
@@ -58,8 +59,9 @@ resource "yandex_alb_virtual_host" "web_vhost" {
 }
 
 resource "yandex_alb_load_balancer" "web_alb" {
-  name               = "web-alb"
-  network_id         = var.network_id
+  name       = "web-alb"
+  network_id = var.network_id
+
   security_group_ids = [var.web_sg]
 
   allocation_policy {
@@ -71,24 +73,25 @@ resource "yandex_alb_load_balancer" "web_alb" {
 
   listener {
     name = "http-listener"
+
     endpoint {
       address {
         external_ipv4_address {}
       }
       ports = [80]
     }
-    
+
     http {
-    handler {
-      http_router_id = yandex_alb_http_router.web_router.id
+      handler {
+        http_router_id = yandex_alb_http_router.web_router.id
+      }
     }
   }
-}
-    
 
   depends_on = [
+    yandex_alb_target_group.web_tg,
+    yandex_alb_backend_group.web_bg,
     yandex_alb_http_router.web_router,
-    yandex_alb_virtual_host.web_vhost,
-    yandex_alb_backend_group.web_bg
+    yandex_alb_virtual_host.web_vhost
   ]
 }

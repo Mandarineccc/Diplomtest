@@ -1,4 +1,4 @@
-- name: Установка Filebeat
+- name: Установка и настройка Filebeat
   hosts: webservers
   become: true
 
@@ -19,7 +19,7 @@
         state: present
         update_cache: true
 
-    - name: Копирование конфига Filebeat
+    - name: Копирование конфигурации Filebeat
       template:
         src: filebeat.yml.j2
         dest: /etc/filebeat/filebeat.yml
@@ -31,3 +31,4 @@
       service:
         name: filebeat
         state: restarted
+        enabled: true

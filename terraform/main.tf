@@ -33,6 +33,17 @@ module "subnets" {
   }
 }
 
+resource "yandex_vpc_security_group" "temp_bastion_sg" {
+  name       = "temp-bastion-sg"
+  network_id = module.vpc.network_id
+
+  ingress {
+    protocol       = "TCP"
+    port           = 22
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 module "bastion" {
   source              = "./modules/bastion"
   platform_id         = var.platform_id
@@ -43,17 +54,6 @@ module "bastion" {
   ssh_public_key_path = var.ssh_public_key_path
   providers = {
     yandex = yandex
-  }
-}
-
-resource "yandex_vpc_security_group" "temp_bastion_sg" {
-  name       = "temp-bastion-sg"
-  network_id = module.vpc.network_id
-
-  ingress {
-    protocol = "TCP"
-    port           = 22
-    v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -69,20 +69,12 @@ module "security_groups" {
 }
 
 resource "yandex_vpc_security_group_rule" "bastion_final_rule" {
-  security_group_binding = module.security_groups.bastion_sg_id
-  direction              = "ingress"
-  port                   = 22
-  protocol = "TCP"
-  v4_cidr_blocks         = ["${module.bastion.bastion_public_ip}/32"]
+  security_group_id = module.security_groups.bastion_sg_id
+  direction         = "ingress"
+  protocol          = "TCP"
+  port              = 22
+  v4_cidr_blocks    = ["${module.bastion.bastion_public_ip}/32"]
 }
-
-#resource "null_resource" "cleanup_temp_sg" {
-#   depends_on = [module.security_groups]
-
-#  provisioner "local-exec" {
-#    command = "yc vpc security-group delete ${yandex_vpc_security_group.temp_bastion_sg.id}"
-#  }
-#}
 
 module "kibana" {
   source              = "./modules/kibana"
@@ -114,7 +106,7 @@ module "web_servers" {
   source      = "./modules/web_servers"
   platform_id = var.platform_id
   subnet_ids = {
-    zone_1 = module.subnets.private_subnet_a_id,
+    zone_1 = module.subnets.private_subnet_a_id
     zone_2 = module.subnets.private_subnet_b_id
   }
   image_id            = "fd8oqjs5ram7b6higj34"
@@ -128,17 +120,14 @@ module "web_servers" {
 }
 
 module "load_balancer" {
-  source = "./modules/load_balancer"
-  target_ips = [
-    module.web_servers.web_server_1_ip,
-    module.web_servers.web_server_2_ip
-  ]
-  subnet_id           = module.subnets.public_subnet_id
-  network_id          = module.vpc.network_id
-  zone                = "ru-central1-a"
-  web_sg              = module.security_groups.web_sg_id
-  private_subnet_a_id = module.subnets.private_subnet_a_id
-  private_subnet_b_id = module.subnets.private_subnet_b_id
+  source               = "./modules/load_balancer"
+  target_ips           = [module.web_servers.web_server_1_ip, module.web_servers.web_server_2_ip]
+  subnet_id            = module.subnets.public_subnet_id
+  network_id           = module.vpc.network_id
+  zone                 = "ru-central1-a"
+  web_sg               = module.security_groups.web_sg_id
+  private_subnet_a_id  = module.subnets.private_subnet_a_id
+  private_subnet_b_id  = module.subnets.private_subnet_b_id
   providers = {
     yandex = yandex
   }
